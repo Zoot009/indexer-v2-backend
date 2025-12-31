@@ -1,0 +1,136 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model credit_config {
+  id              String   @id @default(cuid())
+  totalCredits    Int      @default(1250000)
+  usedCredits     Int      @default(0)
+  reservedCredits Int      @default(0)
+  creditsPerCheck Int      @default(10)
+  updatedAt       DateTime
+}
+
+model credit_logs {
+  id           String          @id @default(cuid())
+  amount       Int
+  operation    CreditOperation
+  balanceAfter Int
+  description  String?
+  projectId    String?
+  createdAt    DateTime        @default(now())
+  Project      projects?       @relation(fields: [projectId], references: [id])
+
+  @@index([createdAt])
+  @@index([projectId])
+}
+
+model domains {
+  id               String    @id @default(cuid())
+  domain           String    @unique
+  notIndexedCount  Int       @default(0)
+  totalUrlsChecked Int       @default(0)
+  indexedUrlsCount Int       @default(0)
+  isBlacklisted    Boolean   @default(false)
+  isWhitelisted    Boolean   @default(false)
+  blacklistedAt    DateTime?
+  projectId        String
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime
+  projects         projects  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  urls             urls[]
+
+  @@index([domain])
+  @@index([isBlacklisted])
+}
+
+model projects {
+  id              String        @id @default(cuid())
+  name            String
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime
+  status          ProjectStatus @default(IDLE)
+  totalUrls       Int           @default(0)
+  processedCount  Int           @default(0)
+  indexedCount    Int           @default(0)
+  notIndexedCount Int           @default(0)
+  errorCount      Int           @default(0)
+  creditsReserved Int           @default(0)
+  creditsUsed     Int           @default(0)
+  startedAt       DateTime?
+  completedAt     DateTime?
+  credit_logs     credit_logs[]
+  domains         domains[]
+  urls            urls[]
+
+  @@index([createdAt])
+  @@index([status])
+}
+
+model urls {
+  id           String    @id @default(cuid())
+  url          String    @unique
+  domain       String
+  isIndexed    Boolean   @default(false)
+  anchorText   String?
+  checkCount   Int       @default(0)
+  status       UrlStatus @default(PENDING)
+  htmlContent  String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime
+  checkedAt    DateTime?
+  jobId        String?
+  taskId       String?
+  errorMessage String?
+  projectId    String
+  domainId     String?
+  domains      domains?  @relation(fields: [domainId], references: [id])
+  projects     projects  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([domain])
+  @@index([isIndexed])
+  @@index([projectId, status])
+  @@index([status])
+  @@index([taskId])
+}
+
+model config {
+  id                   String   @id @default(cuid())
+  enabled              Boolean  @default(true)
+  maxChecks            Int      @default(20)
+  indexedStopThreshold Int      @default(2)
+  applyBlacklistRule   Boolean  @default(true)
+  applyWhitelistRule   Boolean  @default(true)
+  apiKey               String   @unique
+  updatedAt            DateTime
+}
+
+enum CreditOperation {
+  RESERVATION
+  RELEASE
+  CONSUMPTION
+  REFUND
+  ADJUSTMENT
+}
+
+enum ProjectStatus {
+  IDLE
+  QUEUED
+  PROCESSING
+  COMPLETED
+  FAILED
+  PAUSED
+}
+
+enum UrlStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  QUEUED
+}
