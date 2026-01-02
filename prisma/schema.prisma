@@ -43,7 +43,7 @@ model domains {
   createdAt        DateTime  @default(now())
   updatedAt        DateTime
   projects         projects  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  urls             urls[]
+  url              url[]
 
   @@index([domain])
   @@index([isBlacklisted])
@@ -60,43 +60,15 @@ model projects {
   indexedCount    Int           @default(0)
   notIndexedCount Int           @default(0)
   errorCount      Int           @default(0)
-  creditsReserved Int           @default(0)
   creditsUsed     Int           @default(0)
   startedAt       DateTime?
   completedAt     DateTime?
   credit_logs     credit_logs[]
   domains         domains[]
-  urls            urls[]
+  url             url[]
 
   @@index([createdAt])
   @@index([status])
-}
-
-model urls {
-  id           String    @id @default(cuid())
-  url          String    @unique
-  domain       String
-  isIndexed    Boolean   @default(false)
-  anchorText   String?
-  checkCount   Int       @default(0)
-  status       UrlStatus @default(PENDING)
-  htmlContent  String?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime
-  checkedAt    DateTime?
-  jobId        String?
-  taskId       String?
-  errorMessage String?
-  projectId    String
-  domainId     String?
-  domains      domains?  @relation(fields: [domainId], references: [id])
-  projects     projects  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-
-  @@index([domain])
-  @@index([isIndexed])
-  @@index([projectId, status])
-  @@index([status])
-  @@index([taskId])
 }
 
 model config {
@@ -108,6 +80,27 @@ model config {
   applyWhitelistRule   Boolean  @default(true)
   apiKey               String   @unique
   updatedAt            DateTime
+}
+
+model url {
+  id           String    @id
+  url          String    @unique
+  isIndexed    Boolean   @default(false)
+  anchorText   String?
+  checkCount   Int       @default(0)
+  status       UrlStatus @default(PENDING)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime
+  checkedAt    DateTime?
+  errorMessage String?
+  projectId    String
+  domainId     String?
+  domains      domains?  @relation(fields: [domainId], references: [id])
+  projects     projects  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([isIndexed])
+  @@index([projectId, status])
+  @@index([status])
 }
 
 enum CreditOperation {
@@ -125,6 +118,7 @@ enum ProjectStatus {
   COMPLETED
   FAILED
   PAUSED
+  IMPORTED
 }
 
 enum UrlStatus {
