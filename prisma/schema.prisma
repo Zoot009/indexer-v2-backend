@@ -31,40 +31,32 @@ model credit_logs {
 }
 
 model domains {
-  id               String    @id @default(cuid())
-  domain           String    @unique
-  notIndexedCount  Int       @default(0)
-  totalUrlsChecked Int       @default(0)
-  indexedUrlsCount Int       @default(0)
-  isBlacklisted    Boolean   @default(false)
-  isWhitelisted    Boolean   @default(false)
-  blacklistedAt    DateTime?
-  projectId        String
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime
-  projects         projects  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  url              url[]
+  id              String            @id @default(cuid())
+  domain          String            @unique
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime
+  project_domains project_domains[]
+  url             url[]
 
   @@index([domain])
-  @@index([isBlacklisted])
 }
 
 model projects {
-  id              String        @id @default(cuid())
+  id              String            @id @default(cuid())
   name            String
-  createdAt       DateTime      @default(now())
+  createdAt       DateTime          @default(now())
   updatedAt       DateTime
-  status          ProjectStatus @default(IDLE)
-  totalUrls       Int           @default(0)
-  processedCount  Int           @default(0)
-  indexedCount    Int           @default(0)
-  notIndexedCount Int           @default(0)
-  errorCount      Int           @default(0)
-  creditsUsed     Int           @default(0)
+  status          ProjectStatus     @default(IDLE)
+  totalUrls       Int               @default(0)
+  processedCount  Int               @default(0)
+  indexedCount    Int               @default(0)
+  notIndexedCount Int               @default(0)
+  errorCount      Int               @default(0)
+  creditsUsed     Int               @default(0)
   startedAt       DateTime?
   completedAt     DateTime?
   credit_logs     credit_logs[]
-  domains         domains[]
+  project_domains project_domains[]
   url             url[]
 
   @@index([createdAt])
@@ -101,6 +93,25 @@ model url {
   @@index([isIndexed])
   @@index([projectId, status])
   @@index([status])
+}
+
+model project_domains {
+  id               String    @id
+  projectId        String
+  domainId         String
+  notIndexedCount  Int       @default(0)
+  totalUrlsChecked Int       @default(0)
+  indexedUrlsCount Int       @default(0)
+  isBlacklisted    Boolean   @default(false)
+  isWhitelisted    Boolean   @default(false)
+  blacklistedAt    DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime
+  domains          domains   @relation(fields: [domainId], references: [id], onDelete: Cascade)
+  projects         projects  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, domainId])
+  @@index([isBlacklisted])
 }
 
 enum CreditOperation {

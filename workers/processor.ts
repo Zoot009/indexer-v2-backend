@@ -47,11 +47,14 @@ export async function processUrlJob(urlId: string) {
       return // Job completes successfully - another worker handled it
     }
 
-    // 2️⃣ Load URL + Domain
+    // 2️⃣ Load URL + Domain + Project Domain
     console.debug(`[Job][db] Fetching URL details for ${urlId}`)
     const url = await prisma.url.findUnique({
       where: { id: urlId },
-      include: { domains: true, projects: true },
+      include: { 
+        domains: true, 
+        projects: true 
+      },
     })
 
     if (!url) {
@@ -79,23 +82,32 @@ export async function processUrlJob(urlId: string) {
 
     console.log(`[Job][info] url=${url.url} domain=${url.domains.domain} domainId=${url.domainId} projectId=${url.projectId}`)
 
-    // 3️⃣ Check domain state (no scrape yet)
-    if (url.domains.isBlacklisted || url.domains.isWhitelisted) {
-      console.info(`[Job][domain] Domain ${url.domains.domain} stopped: blacklisted=${url.domains.isBlacklisted} whitelisted=${url.domains.isWhitelisted}`)
+    // 3️⃣ Check project_domain state (no scrape yet)
+    const projectDomain = url.domainId ? await prisma.project_domains.findUnique({
+      where: {
+        projectId_domainId: {
+          projectId: url.projectId,
+          domainId: url.domainId,
+        },
+      },
+    }) : null
+
+    if (projectDomain && (projectDomain.isBlacklisted || projectDomain.isWhitelisted)) {
+      console.info(`[Job][domain] Domain ${url.domains.domain} stopped for project: blacklisted=${projectDomain.isBlacklisted} whitelisted=${projectDomain.isWhitelisted}`)
 
       await prisma.$transaction(async (tx) => {
         await tx.url.update({
           where: { id: urlId },
           data: {
-            status: 'COMPLETED',
-            isIndexed: url.domains?.isBlacklisted ? false : true,
+            status: UrlStatus.COMPLETED,
+            isIndexed: projectDomain.isBlacklisted ? false : true,
             errorMessage: 'DOMAIN_STOPPED',
             checkedAt: new Date(),
           },
         })
 
-        const indexedCountIncrement = url.domains?.isWhitelisted ? 1 : 0
-        const notIndexedCountIncrement = url.domains?.isBlacklisted ? 1 : 0
+        const indexedCountIncrement = projectDomain.isWhitelisted ? 1 : 0
+        const notIndexedCountIncrement = projectDomain.isBlacklisted ? 1 : 0
 
         await tx.projects.update({
           where: { id: url.projectId },
