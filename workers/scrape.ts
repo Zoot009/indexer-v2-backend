@@ -100,7 +100,7 @@ export async function checkUrlIndexing(
         };
 
         const response: AxiosResponse = await axios(config);
-        
+
         // Check indexing status
         const htmlContent = typeof response.data === 'string' ? response.data : JSON.stringify(response.data);
         const result = checkIndexStatus(htmlContent, url);

@@ -14,7 +14,11 @@ const worker = new Worker(
   },
   {
     connection: redis,
-    concurrency: 14, // 🔥 scrape.do limit
+    concurrency: 12, // 🔥 scrape.do limit
+    limiter: {
+      max: 15,        // 15 requests
+      duration: 1000, // Per second
+    },
     settings: {
       backoffStrategy: (attemptsMade) => {
         return Math.min(attemptsMade * 5000, 30000) // 5s, 10s, 15s, ... max 30s
@@ -123,6 +127,6 @@ initializeStatsCache().then(() => {
   console.log('📊 Stats cache initialized')
 })
 
-console.log('🚀 Worker started with concurrency = 14')
+console.log('🚀 Worker started with concurrency = 12')
 console.log(`📊 Listening for jobs on queue: ${queueName}`)
 console.log('Press Ctrl+C to stop\n')
