@@ -1,6 +1,8 @@
 import { prisma } from '../lib/prisma'
 import { applyDomainRules } from './domain-rules'
 import { checkUrlIndexing } from './scrape'
+import { publishUrlProcessed } from '../lib/events'
+import { incrementStats } from '../lib/stats-aggregator'
 
 async function consumeCredits(projectId: string, amount: number) {
   const config = await prisma.credit_config.findFirst()
@@ -133,6 +135,7 @@ export async function processUrlJob(urlId: string) {
             errorMessage: result.errorMessage,
             checkedAt: new Date(),
             checkCount: { increment: 1 },
+            updatedAt: new Date(),
           },
         })
 
@@ -144,6 +147,16 @@ export async function processUrlJob(urlId: string) {
             creditsUsed: { increment: creditsPerCheck },
           },
         })
+      })
+
+      // Emit event for error
+      await incrementStats(url.projectId, 'error')
+      await publishUrlProcessed({
+        urlId,
+        projectId: url.projectId,
+        isIndexed: false,
+        status: 'FAILED',
+        timestamp: Date.now(),
       })
       return
     }
@@ -180,6 +193,16 @@ export async function processUrlJob(urlId: string) {
       if (domainId) {
         await applyDomainRules(tx, domainId, indexed, projectId)
       }
+    })
+
+    // Emit real-time event
+    await incrementStats(url.projectId, indexed ? 'indexed' : 'notIndexed')
+    await publishUrlProcessed({
+      urlId,
+      projectId: url.projectId,
+      isIndexed: indexed,
+      status: 'COMPLETED',
+      timestamp: Date.now(),
     })
 
     const totalDuration = Date.now() - startTs

@@ -2,6 +2,7 @@ import { Worker, Queue } from 'bullmq'
 import { processUrlJob } from './processor'
 import redis from '../lib/redis'
 import { prisma } from '../lib/prisma'
+import { initializeStatsCache } from '../lib/stats-aggregator'
 
 const queueName = 'urls-index-check'
 const queue = new Queue(queueName, { connection: redis })
@@ -13,7 +14,7 @@ const worker = new Worker(
   },
   {
     connection: redis,
-    concurrency: 12, // 🔥 scrape.do limit
+    concurrency: 14, // 🔥 scrape.do limit
     settings: {
       backoffStrategy: (attemptsMade) => {
         return Math.min(attemptsMade * 5000, 30000) // 5s, 10s, 15s, ... max 30s
@@ -117,6 +118,11 @@ async function shutdown() {
 process.on('SIGTERM', shutdown)
 process.on('SIGINT', shutdown)
 
-console.log('🚀 Worker started with concurrency = 12')
+// Initialize stats cache on startup
+initializeStatsCache().then(() => {
+  console.log('📊 Stats cache initialized')
+})
+
+console.log('🚀 Worker started with concurrency = 14')
 console.log(`📊 Listening for jobs on queue: ${queueName}`)
 console.log('Press Ctrl+C to stop\n')

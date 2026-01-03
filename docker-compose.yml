@@ -1,0 +1,58 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: indexer-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-change_this_redis_password}
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-change_this_redis_password}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: indexer-worker
+    restart: unless-stopped
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      REDIS_URL: redis://:${REDIS_PASSWORD:-change_this_redis_password}@redis:6379
+      SCRAPEDO_API_KEY: ${SCRAPEDO_API_KEY}
+      NODE_ENV: production
+    command: tsx workers/index.ts
+    volumes:
+      - ./prisma:/app/prisma
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: indexer-api
+    restart: unless-stopped
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      REDIS_URL: redis://:${REDIS_PASSWORD:-change_this_redis_password}@redis:6379
+      API_PORT: 3001
+      NODE_ENV: production
+    command: tsx api/stats-sse.ts
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./prisma:/app/prisma
+
+volumes:
+  redis_data:
