@@ -3,6 +3,7 @@ import { applyDomainRules } from './domain-rules'
 import { checkUrlIndexing } from './scrape'
 import { publishUrlProcessed } from '../lib/events'
 import { incrementStats } from '../lib/stats-aggregator'
+import { UrlStatus } from '../generated/prisma/enums'
 
 async function consumeCredits(projectId: string, amount: number) {
   const config = await prisma.credit_config.findFirst()
@@ -42,9 +43,8 @@ export async function processUrlJob(urlId: string) {
 
     console.log(`[Job][claim] url=${urlId} claimedCount=${claimed.count}`)
     if (claimed.count === 0) {
-      const msg = `[Job][claim-failed] URL ${urlId} already claimed or not pending`;
-      console.info(msg)
-      throw new Error(msg)
+      console.info(`[Job][skip] URL ${urlId} already processed or claimed by another worker`)
+      return // Job completes successfully - another worker handled it
     }
 
     // 2️⃣ Load URL + Domain
@@ -54,13 +54,27 @@ export async function processUrlJob(urlId: string) {
       include: { domains: true, projects: true },
     })
 
-    if (!url || !url.domains) {
-      console.error(`[Job][error] URL ${urlId} not found or missing domain`)
-      await prisma.url.updateMany({
+    if (!url) {
+      console.warn(`[Job][skip] URL ${urlId} not found in database - likely deleted. Skipping job.`)
+      return // Job completes successfully but does nothing
+    }
+
+    if (!url.domains) {
+      console.error(`[Job][error] URL ${urlId} missing domain assignment`)
+      await prisma.url.update({
         where: { id: urlId },
-        data: { status: 'FAILED', errorMessage: 'URL_NOT_FOUND' },
+        data: { 
+          status: UrlStatus.FAILED, 
+          errorMessage: 'Missing domain assignment',
+          checkedAt: new Date()
+        },
       })
-      throw new Error('URL_NOT_FOUND')
+      // Increment error count for project
+      await prisma.projects.update({
+        where: { id: url.projectId },
+        data: { errorCount: { increment: 1 } }
+      })
+      return // Job completes but URL is marked as ERROR
     }
 
     console.log(`[Job][info] url=${url.url} domain=${url.domains.domain} domainId=${url.domainId} projectId=${url.projectId}`)
