@@ -48,12 +48,12 @@ async function cleanupOrphanedJobs() {
         await prisma.url.update({
           where: { id: urlId },
           data: { 
-            status: 'ERROR', 
+            status: 'FAILED', 
             errorMessage: 'Missing domain assignment' 
           }
         })
         removedCount++
-      } else if (url.status === 'COMPLETED' || url.status === 'ERROR') {
+      } else if (url.status === 'COMPLETED' || url.status === 'FAILED') {
         console.log(`✅ Removing job for already processed URL: ${urlId} (status: ${url.status})`)
         await job.remove()
         removedCount++

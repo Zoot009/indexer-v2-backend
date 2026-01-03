@@ -39,7 +39,7 @@ async function main() {
           domainId: null
         },
         data: {
-          status: 'ERROR',
+          status: 'FAILED',
           errorMessage: 'Missing domain assignment',
           checkedAt: new Date()
         }
