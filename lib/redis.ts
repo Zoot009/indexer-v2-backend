@@ -1,3 +1,4 @@
+import 'dotenv/config'
 import IORedis from 'ioredis';
 
 const redisUrl = process.env.REDIS_URL!;
