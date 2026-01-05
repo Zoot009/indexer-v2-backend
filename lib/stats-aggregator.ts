@@ -1,4 +1,4 @@
-import { prisma } from './prisma'
+import prisma from './prisma'
 import { publishStatsUpdate } from './events'
 
 // In-memory stats cache

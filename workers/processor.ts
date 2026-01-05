@@ -1,4 +1,4 @@
-import { prisma } from '../lib/prisma'
+import prisma from '../lib/prisma'
 import { applyDomainRules } from './domain-rules'
 import { checkUrlIndexing } from './scrape'
 import { publishUrlProcessed } from '../lib/events'

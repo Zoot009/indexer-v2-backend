@@ -1,6 +1,6 @@
 import { Queue } from 'bullmq';
 import redis from '../lib/redis';
-import { prisma } from '../lib/prisma';
+import prisma from '../lib/prisma';
 
 async function main() {
   console.log('[enqueue] Starting...');

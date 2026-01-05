@@ -1,5 +1,5 @@
 import { Queue } from 'bullmq'
-import { prisma } from '../lib/prisma'
+import  prisma  from '../lib/prisma'
 import redis from '../lib/redis'
 
 const queueName = 'urls-index-check'

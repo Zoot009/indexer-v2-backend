@@ -1,6 +1,6 @@
 //Check if the domain is whitelisted or blacklisted if both are false then continue with the below logic
 
-import { prisma } from "../lib/prisma";
+import prisma from "../lib/prisma";
 
 const urlId = process.argv[2] ?? "some-url-id";
 

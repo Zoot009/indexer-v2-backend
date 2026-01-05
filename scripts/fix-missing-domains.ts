@@ -1,4 +1,4 @@
-import { prisma } from '../lib/prisma'
+import prisma from '../lib/prisma'
 
 async function fixMissingDomains() {
   console.log('🔧 Fixing URLs without domain assignments...\n')

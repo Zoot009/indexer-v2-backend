@@ -1,7 +1,7 @@
 import { Worker, Queue } from 'bullmq'
 import { processUrlJob } from './processor'
 import redis from '../lib/redis'
-import { prisma } from '../lib/prisma'
+import prisma from '../lib/prisma'
 import { initializeStatsCache } from '../lib/stats-aggregator'
 
 const queueName = 'urls-index-check'

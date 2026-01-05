@@ -1,4 +1,4 @@
-import { prisma } from "../lib/prisma";
+import prisma from "../lib/prisma";
 
 const checkURL = async (urlID: string) => {
   const urlRecord = await prisma.url.findUnique({
