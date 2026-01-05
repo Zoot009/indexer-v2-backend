@@ -35,9 +35,12 @@ export async function processUrlJob(urlId: string) {
   console.log(`[Job][start] Processing URL=${urlId} at ${new Date(startTs).toISOString()}`)
 
   try {
-    // 1️⃣ Claim URL
+    // 1️⃣ Claim URL (accept both PENDING and QUEUED status)
     const claimed = await prisma.url.updateMany({
-      where: { id: urlId, status: 'PENDING' },
+      where: { 
+        id: urlId, 
+        status: { in: ['PENDING', 'QUEUED'] }
+      },
       data: { status: 'PROCESSING' },
     })
 
