@@ -14,7 +14,7 @@ const worker = new Worker(
   },
   {
     connection: redis,
-    concurrency: 8, // Reduced from 12 to prevent pool exhaustion (20 pool max / ~2.5 queries per job)
+    concurrency: 12,
     limiter: {
       max: 15,        // 15 requests
       duration: 1000, // Per second
@@ -128,6 +128,6 @@ initializeStatsCache().then(() => {
   console.log('📊 Stats cache initialized')
 })
 
-console.log('🚀 Worker started with concurrency = 8')
+console.log('🚀 Worker started with concurrency = 12')
 console.log(`📊 Listening for jobs on queue: ${queueName}`)
 console.log('Press Ctrl+C to stop\n')
